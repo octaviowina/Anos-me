@@ -1,46 +1,52 @@
+const { commands } = global.GoatBot; // On suppose que toutes les commandes sont accessibles via global.GoatBot
+
 module.exports = {
   config: {
     name: "help",
-    aliases: ["aide", "commands"],
     version: "1.0",
-    author: "VOLDIGO",
+    author: "ミ★𝐒𝐎𝐍𝐈𝐂✄𝐄𝐗𝐄 3.0★彡",
     countDown: 5,
     role: 0,
-    shortDescription: "Affiche la liste des commandes",
-    longDescription: "Montre toutes les commandes disponibles ou les détails d'une commande spécifique",
-    category: "Utilitaires",
-    guide: "{p}help [commande]",
+    shortDescription: {
+      en: "Display all available commands",
+    },
+    longDescription: {
+      en: "Display a categorized list of all commands available in the bot",
+    },
+    category: "system",
+    guide: {
+      en: "{pn}",
+    },
   },
 
-  onStart: async function ({ api, event, args, commands }) {
-    const { threadID, messageID } = event;
+  onStart: async function ({ message, role }) {
+    // Initialisation d'un objet pour regrouper les commandes par catégories
+    const categories = {};
 
-    if (!args[0]) {
-      // Liste des commandes
-      const commandList = commands
-        .map(cmd => `🔹 cmd.config.name :{cmd.config.shortDescription}`)
-        .join("\n");
+    // Parcours des commandes pour les classer par catégories
+    for (const [name, value] of commands) {
+      // Vérifie le rôle requis pour la commande
+      if (value.config.role > 0 && role < value.config.role) continue;
 
-      return api.sendMessage(
-        `✨ Liste des commandes disponibles ✨\n\n${commandList}\n\n❓ Utilise "{p}help [nomCommande]" pour plus d'infos.`,
-        threadID,
-        messageID
-      );
-    } else {
-      // Détail d'une commande
-      const name = args[0].toLowerCase();
-      const command =commands.find(cmd => cmd.config.name === name || (cmd.config.aliases        cmd.config.aliases.includes(name)));
-
-      if (!command) 
-        return api.sendMessage(`❌ La commande "{name}" est introuvable.`, threadID, messageID);
+      const category = value.config.category || "Uncategorized";
+      if (!categories[category]) {
+        categories[category] = [];
       }
-
-      const config = command.config;
-      return api.sendMessage(
-        `📘 Commande : config.name📌 Description :{config.longDescription || config.shortDescription}\n🔁 Alias : config.aliases?.join(", ") || "Aucun"📚 Guide :{config.guide || "Pas de guide disponible"}\n🔐 Rôle requis : ${config.role}`,
-        threadID,
-        messageID
-      );
+      categories[category].push(name);
     }
-  }
+
+    // Construction du message à afficher
+    let messageToSend = "==[📜 LIST OF COMMANDS 📜]==\n━━━━━━━━━━━━━━━━\n";
+    for (const [category, cmds] of Object.entries(categories)) {
+      messageToSend += `\n✨ ${category.toUpperCase()} ✨\n`;
+      messageToSend += cmds.sort().map(cmd => `- ${cmd}`).join("\n");
+      messageToSend += "\n";
+    }
+
+    // Ajout du total des commandes
+    messageToSend += `━━━━━━━━━━━━━━━━\nTotal commands: ${commands.size}`;
+
+    // Envoi du message
+    return message.reply(messageToSend);
+  },
 };
